@@ -20,13 +20,6 @@
 #include "syscall_hook_manager.h"
 #endif // #ifndef CONFIG_KSU_SUSFS
 #include "su_mount_ns.h"
-#include <linux/sched/task.h>
-
-// Compatibility for older kernels
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
-// In kernel 5.4, task_work_add() takes a bool instead of TWA_* flags
-#define TWA_RESUME false
-#endif
 
 #define FILE_MAGIC 0x7f4b5355 // ' KSU', u32
 #define FILE_FORMAT_VERSION 3 // u32
