@@ -31,7 +31,11 @@ static bool ksu_sucompat_non_kp __read_mostly = true;
 
 extern void escape_to_root();
 
-static void __user *userspace_stack_buffer(const void *d, size_t len)
+static const char sh_path[] = "/system/bin/sh";
+static const char ksud_path[] = KSUD_PATH;
+static const char su[] = SU_PATH;
+
+static inline void __user *userspace_stack_buffer(const void *d, size_t len)
 {
 	/* To avoid having to mmap a page in userspace, just write below the stack
    * pointer. */
@@ -40,17 +44,13 @@ static void __user *userspace_stack_buffer(const void *d, size_t len)
 	return copy_to_user(p, d, len) ? NULL : p;
 }
 
-static char __user *sh_user_path(void)
+static inline char __user *sh_user_path(void)
 {
-	static const char sh_path[] = "/system/bin/sh";
-
 	return userspace_stack_buffer(sh_path, sizeof(sh_path));
 }
 
-static char __user *ksud_user_path(void)
+static inline char __user *ksud_user_path(void)
 {
-	static const char ksud_path[] = KSUD_PATH;
-
 	return userspace_stack_buffer(ksud_path, sizeof(ksud_path));
 }
 
@@ -80,7 +80,6 @@ static int ksu_sucompat_user_common(const char __user **filename_user,
 				const bool escalate)
 {
 	const char su[] = SU_PATH;
-
 	char path[sizeof(su) + 1]; // sizeof includes nullterm already!
 	long len = ksu_strncpy_from_user_retry(path, *filename_user, sizeof(path));
 	if (len <= 0) // sizeof(su) is not zero
@@ -160,8 +159,6 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 				 int *__never_use_flags)
 {
 	struct filename *filename;
-	const char sh[] = KSUD_PATH;
-	const char su[] = SU_PATH;
 
 #ifndef CONFIG_KSU_KPROBES_HOOK
 	if (!ksu_sucompat_non_kp) {
@@ -181,7 +178,7 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 		return 0;
 
 	pr_info("do_execveat_common su found\n");
-	memcpy((void *)filename->name, sh, sizeof(sh));
+	memcpy((void *)filename->name, ksud_path, sizeof(ksud_path));
 
 	escape_to_root();
 
